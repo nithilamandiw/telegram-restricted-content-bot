@@ -181,7 +181,7 @@ async def test_help_and_queue_are_styled_with_working_buttons(settings, store, c
         await dispatcher.feed_update(bot, Update(update_id=40, message=message(101, "/start")))
         welcome = session.requests[-1]
         assert welcome.parse_mode == "HTML"
-        assert "<b>Your media helper</b>" in welcome.text
+        assert "<b>Telegram Restricted Content Bot</b>" in welcome.text
         assert welcome.reply_markup.inline_keyboard[0][0].callback_data == "ui:status"
         await dispatcher.feed_update(
             bot, Update(update_id=41, message=message(101, "https://t.me/channel/123"))

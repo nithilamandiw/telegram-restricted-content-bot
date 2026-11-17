@@ -1,5 +1,5 @@
 {
-  "name": "Telegram Download Bot",
+  "name": "Telegram Restricted Content Bot",
   "description": "Private Telegram text and media delivery with channel joining and approval waits.",
   "stack": "container",
   "keywords": ["telegram", "python", "docker"],

@@ -1,4 +1,4 @@
-# Telegram download bot
+# Telegram Restricted Content Bot
 
 A private bot for an allowlist of Telegram users. Send a message link; the bot reads it
 through one shared user account and returns its text as a message or its media as an
@@ -259,4 +259,3 @@ image builds, switching off the old local API server, and Heroku worker startup.
 Local Docker Compose continues to use SQLite and its existing session file when
 the cloud-only variables are unset. No Heroku account or paid resources are created
 by these files or by the local tests.
-# crystal-telegram-bot

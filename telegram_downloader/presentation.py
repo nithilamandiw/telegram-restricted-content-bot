@@ -39,7 +39,7 @@ STATES = {
 }
 
 HELP = (
-    "📥 <b>Your media helper</b>\n\n"
+    "📥 <b>Telegram Restricted Content Bot</b>\n\n"
     "Send a <b>Telegram post link</b> to get its text or original file.\n\n"
     "🔐 <b>From a private channel?</b>\n"
     "<b>1.</b> Send the channel’s invite link.\n"

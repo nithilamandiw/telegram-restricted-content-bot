@@ -198,7 +198,7 @@ def configure_logging() -> None:
 
 
 def cli() -> None:
-    parser = argparse.ArgumentParser(description="Private Telegram download bot")
+    parser = argparse.ArgumentParser(description="Telegram Restricted Content Bot")
     parser.add_argument(
         "command",
         choices=["run", "login", "logout-cloud", "logout-local", "check", "export-session"],
