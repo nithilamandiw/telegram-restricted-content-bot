@@ -4,6 +4,7 @@ import sqlite3
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .database import PostgresDatabase
@@ -11,6 +12,8 @@ from .database import PostgresDatabase
 ACTIVE = ("queued", "downloading", "uploading")
 PENDING = (*ACTIVE, "awaiting_approval")
 PENDING_SQL = ",".join("?" for _ in PENDING)
+FINISHED = ("done", "failed", "cancelled", "expired", "interrupted")
+HISTORY_RETENTION = timedelta(hours=2)
 
 
 class QueueFull(ValueError):
@@ -68,6 +71,7 @@ class JobStore:
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS jobs_user_state ON jobs(user_id, state);
+            CREATE INDEX IF NOT EXISTS jobs_state_updated ON jobs(state, updated_at);
             CREATE TABLE IF NOT EXISTS invitations (
                 invite_hash TEXT PRIMARY KEY,
                 state TEXT NOT NULL,
@@ -108,6 +112,9 @@ class JobStore:
                 )
             """)
             self.db.execute("CREATE INDEX IF NOT EXISTS jobs_user_state ON jobs(user_id,state)")
+            self.db.execute(
+                "CREATE INDEX IF NOT EXISTS jobs_state_updated ON jobs(state,updated_at)"
+            )
             self.db.execute("""
                 CREATE TABLE IF NOT EXISTS invitations (
                     invite_hash TEXT PRIMARY KEY, state TEXT NOT NULL,
@@ -189,6 +196,18 @@ class JobStore:
             "SELECT * FROM jobs WHERE user_id=? ORDER BY id DESC LIMIT ?", (user_id, limit)
         ).fetchall()
         return [self._job(row) for row in rows]
+
+    def prune_history(self, *, now: datetime | None = None) -> int:
+        """Expire finished requests while preserving active transfers and approval waits."""
+        cutoff = (now or datetime.now(UTC)) - HISTORY_RETENTION
+        boundary = cutoff if self.postgres else cutoff.strftime("%Y-%m-%d %H:%M:%S")
+        placeholders = ",".join("?" for _ in FINISHED)
+        with self.db:
+            result = self.db.execute(
+                f"DELETE FROM jobs WHERE state IN ({placeholders}) AND updated_at<=?",
+                (*FINISHED, boundary),
+            )
+        return result.rowcount
 
     def get_job(self, job_id: int) -> Job | None:
         row = self.db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()

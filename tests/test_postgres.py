@@ -1,30 +1,10 @@
 """Run with TEST_DATABASE_URL pointing at a disposable database ending in _test."""
 
-import os
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlsplit
 
 import pytest
 
 from telegram_downloader.store import JobStore, QueueFull
-
-
-@pytest.fixture
-def pg_url():
-    url = os.environ.get("TEST_DATABASE_URL")
-    if not url:
-        pytest.skip("Set TEST_DATABASE_URL for PostgreSQL integration tests")
-    if not urlsplit(url).path.endswith("_test"):
-        pytest.fail("TEST_DATABASE_URL must select a disposable database ending in _test")
-    return url
-
-
-@pytest.fixture
-def pg_store(settings, pg_url):
-    database = JobStore(settings.jobs_path, database_url=pg_url)
-    database.db.execute("TRUNCATE jobs, invitations, user_invites RESTART IDENTITY")
-    yield database
-    database.close()
 
 
 def enqueue(database, user=101):

@@ -18,6 +18,7 @@ from telethon.sessions import StringSession
 
 from .config import Settings
 from .handlers import make_router
+from .history import cleanup_history
 from .store import JobStore
 from .transfer import TransferService, bot_request
 
@@ -110,12 +111,13 @@ async def serve(settings: Settings, *, handle_signals: bool = True) -> None:
         dispatcher.include_router(make_router(settings, store, service))
         worker = asyncio.create_task(service.run(), name="download-worker")
         approval_worker = asyncio.create_task(service.joins.run(), name="approval-worker")
+        history_worker = asyncio.create_task(cleanup_history(store), name="history-worker")
 
         # Stop polling if the worker exits unexpectedly instead of silently accepting jobs.
         async def monitor_worker():
             try:
                 done, _ = await asyncio.wait(
-                    [worker, approval_worker], return_when=asyncio.FIRST_COMPLETED
+                    [worker, approval_worker, history_worker], return_when=asyncio.FIRST_COMPLETED
                 )
                 for task in done:
                     task.result()
@@ -138,9 +140,12 @@ async def serve(settings: Settings, *, handle_signals: bool = True) -> None:
         finally:
             monitor.cancel()
             approval_worker.cancel()
+            history_worker.cancel()
             await service.stop()
             worker.cancel()
-            await asyncio.gather(worker, approval_worker, monitor, return_exceptions=True)
+            await asyncio.gather(
+                worker, approval_worker, history_worker, monitor, return_exceptions=True
+            )
     finally:
         store.close()
         await client.disconnect()

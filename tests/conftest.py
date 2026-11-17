@@ -1,5 +1,7 @@
+import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+from urllib.parse import urlsplit
 
 import pytest
 from telethon import types
@@ -26,6 +28,24 @@ def settings(tmp_path):
 @pytest.fixture
 def store(settings):
     database = JobStore(settings.jobs_path)
+    yield database
+    database.close()
+
+
+@pytest.fixture
+def pg_url():
+    url = os.environ.get("TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("Set TEST_DATABASE_URL for PostgreSQL integration tests")
+    if not urlsplit(url).path.endswith("_test"):
+        pytest.fail("TEST_DATABASE_URL must select a disposable database ending in _test")
+    return url
+
+
+@pytest.fixture
+def pg_store(settings, pg_url):
+    database = JobStore(settings.jobs_path, database_url=pg_url)
+    database.db.execute("TRUNCATE jobs, invitations, user_invites RESTART IDENTITY")
     yield database
     database.close()
 

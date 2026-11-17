@@ -161,6 +161,11 @@ procedure instead of `logout-local` before starting the local API instance.
 Heroku's [filesystem is temporary](https://devcenter.heroku.com/articles/dynos#ephemeral-filesystem).
 Request and approval state survive in PostgreSQL. Waiting jobs retain their original
 deadline; queued/active transfers interrupted by a restart require resubmission.
+Finished request records are automatically deleted two hours after their final status
+update. A separate task checks at startup and every 60 seconds, including during
+downloads and approval waits. Existing old finished records are also removed after
+deployment. This clears database history; it does not remove messages or files already
+delivered in Telegram. Pending jobs, invitation associations, and account sessions remain.
 Downloaded files and the API cache are not persisted across dyno replacement.
 The supervisor handles SIGTERM and stops both processes; if either component fails,
 it exits so Heroku can restart the worker.

@@ -9,7 +9,7 @@ original document. Python 3.12, Telethon, aiogram, SQLite, and a local Telegram 
 - Private invite joining, with automatic download after admin approval (up to 24 hours).
 - Files up to **2,000,000,000 bytes**, without loading the whole file into memory.
 - One transfer at a time; five pending requests per user, including the active request.
-- Progress, cancellation, persistent job history, restart recovery, and temporary-file cleanup.
+- Progress, cancellation, two-hour finished-request history, restart recovery, and file cleanup.
 - Formatted status cards, progress bars, and buttons for Cancel, Open post, and My requests.
 
 Only the linked message is processed. There is no bulk download,
@@ -163,7 +163,17 @@ invitation association and deadline. Graceful shutdown also cleans the active do
 `/status` retains the interruption even when its notification cannot be delivered.
 
 Updating an existing installation automatically adds invitation tables and job fields
-to SQLite without deleting history. Rebuild only the bot to deploy code changes:
+to SQLite. Finished request history is deleted automatically two hours after the final
+status update, including delivered, failed, cancelled, expired, and interrupted requests.
+Cleanup runs on startup and every 60 seconds, independently of transfers, for SQLite
+and PostgreSQL. Pending transfers and approval waits stay until they finish. Old
+finished records already present at deployment are cleaned up as well. `/status`
+and **My requests** show the remaining latest ten requests; previously sent Telegram
+messages and delivered files in chat are not deleted. Database space becomes available
+for reuse; the database's allocated file size may not immediately shrink. Account
+sessions and invitation associations are retained.
+
+Rebuild only the bot to deploy code changes:
 
 ```sh
 docker compose up -d --no-deps --build bot

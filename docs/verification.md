@@ -1,5 +1,16 @@
 # Verification record
 
+## Two-hour request history
+
+Verified on November 17, 2026: all 179 tests passed with SQLite and a disposable
+PostgreSQL 17 database. Retention tests cover the exact two-hour boundary for every
+finished state, recently completed jobs submitted earlier, preservation of all pending
+states and invite associations, non-reused job IDs, and cleanup of pre-existing SQLite
+history after reopening. Background checks verify immediate cleanup, safe retries after
+a database failure, cleanup during a blocked upload, and startup/shutdown with polling.
+Ruff lint, formatting, and whitespace checks passed. These were local automated checks;
+two-hour expiration has not yet been observed on the deployed Heroku app.
+
 ## Live Telegram checks
 
 **Startup verified on November 17, 2026:** Docker Desktop was started, the bot image

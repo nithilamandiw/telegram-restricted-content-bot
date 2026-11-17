@@ -48,6 +48,7 @@ HELP = (
     "<b>Supported</b>\n"
     "💬 Text · 🖼 Photos · 🎬 Videos · 📎 Files up to 2 GB\n\n"
     "I wait up to 24 hours for approval. Telegram may block protected posts.\n"
+    "Finished request history clears after 2 hours.\n"
     "Use the buttons below, or /status and /cancel."
 )
 
@@ -129,6 +130,7 @@ def status_card(jobs: list[Job]) -> str:
             lines.append(escape(job.error[:160]))
         lines.append("")
     lines.append("Use /cancel followed by the request number to stop a pending request.")
+    lines.append("Finished requests are removed from history after 2 hours.")
     return "\n".join(lines)
 
 
