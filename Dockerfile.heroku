@@ -1,0 +1,23 @@
+# Heroku's Docker/Container Registry path targets Cedar and linux/amd64.
+ARG BOT_API_IMAGE=aiogram/telegram-bot-api:latest
+FROM ${BOT_API_IMAGE}
+
+USER root
+RUN apk add --no-cache python3 py3-pip \
+    && python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DATA_DIR=/tmp/telegram-downloader \
+    BOT_API_BASE_URL=http://127.0.0.1:8081
+WORKDIR /app
+COPY requirements-heroku.lock ./
+RUN pip install -r requirements-heroku.lock
+COPY pyproject.toml ./
+COPY telegram_downloader ./telegram_downloader
+RUN pip install --no-deps .
+# Heroku assigns an arbitrary non-root UID. Runtime writes only to /tmp and Postgres.
+# Skip the upstream image's root-only entrypoint/chown behavior.
+ENTRYPOINT []
+CMD ["python", "-m", "telegram_downloader.heroku"]

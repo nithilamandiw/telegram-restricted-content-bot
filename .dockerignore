@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.venv
+.bootstrap
+.uv-cache
+data
+*.session*
+telegram-session*.txt
+*.sqlite*
+__pycache__
+.pytest_cache
+.ruff_cache
+tests

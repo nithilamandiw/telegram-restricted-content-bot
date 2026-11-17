@@ -1,0 +1,33 @@
+{
+  "name": "Telegram Download Bot",
+  "description": "Private Telegram text and media delivery with channel joining and approval waits.",
+  "stack": "container",
+  "keywords": ["telegram", "python", "docker"],
+  "formation": {
+    "worker": {
+      "quantity": 0
+    }
+  },
+  "env": {
+    "TELEGRAM_API_ID": {
+      "description": "Your Telegram application API ID from my.telegram.org/apps.",
+      "required": true
+    },
+    "TELEGRAM_API_HASH": {
+      "description": "Your Telegram application API hash. Enter it privately here, never in GitHub.",
+      "required": true
+    },
+    "BOT_TOKEN": {
+      "description": "Your bot token from BotFather. Keep this value private.",
+      "required": true
+    },
+    "ALLOWED_USER_IDS": {
+      "description": "Comma-separated numeric Telegram user IDs allowed to use the bot.",
+      "required": true
+    },
+    "TELEGRAM_SESSION": {
+      "description": "Contents of data/telegram-session.txt created by the local export-session command. Keep this account credential private.",
+      "required": true
+    }
+  }
+}

@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+.venv/
+.bootstrap/
+.uv-cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+data/
+*.session*
+telegram-session*.txt
+*.sqlite*
+dist/
+build/
