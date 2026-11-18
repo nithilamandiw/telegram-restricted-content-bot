@@ -336,6 +336,32 @@ class TransferService:
             await progress.update("uploading", force=True)
 
             async def upload():
+                # MP4 documents also qualify, even when the source sent them as files.
+                mime_type = getattr(message.file, "mime_type", None)
+                if mime_type == "video/mp4" or (
+                    mime_type in {None, "application/octet-stream"}
+                    and downloaded.suffix.lower() == ".mp4"
+                ):
+                    video_attribute = next(
+                        (
+                            attribute
+                            for attribute in getattr(message.document, "attributes", [])
+                            if isinstance(attribute, types.DocumentAttributeVideo)
+                        ),
+                        None,
+                    )
+                    duration = getattr(message.file, "duration", None)
+                    return await self.bot.send_video(
+                        chat_id=job.chat_id,
+                        video=ProgressFile(downloaded, progress),
+                        caption=caption_text(message.message),
+                        parse_mode=None,
+                        duration=int(duration) if duration is not None else None,
+                        width=getattr(message.file, "width", None),
+                        height=getattr(message.file, "height", None),
+                        supports_streaming=getattr(video_attribute, "supports_streaming", None),
+                        request_timeout=self.settings.transfer_timeout_seconds,
+                    )
                 return await self.bot.send_document(
                     chat_id=job.chat_id,
                     document=ProgressFile(downloaded, progress),

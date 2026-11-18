@@ -2,7 +2,8 @@
 
 A private bot for an allowlist of Telegram users. Send a message link; the bot reads it
 through one shared user account and returns its text as a message or its media as an
-original document. Python 3.12, Telethon, aiogram, SQLite, and a local Telegram Bot API server.
+inline MP4 video or original document. Python 3.12, Telethon, aiogram, SQLite,
+and a local Telegram Bot API server.
 
 - Public channel, private channel/group, and topic message links.
 - Text posts with line breaks and emoji; long text is split into ordered messages.
@@ -131,8 +132,10 @@ the bot container to apply changes:
 docker compose up -d --force-recreate bot
 ```
 
-Uploads are documents to preserve the downloaded bytes and filename. Videos may
-therefore appear as files rather than inline players. Captions are plain text, bounded
+MP4 videos are uploaded as playable Telegram videos, including MP4 files originally
+posted as documents. Source duration, dimensions, and streaming support are retained
+when available. Other media are uploaded as documents. All uploads preserve the downloaded
+bytes without transcoding. Captions are plain text, bounded
 to Telegram's 1,024 UTF-16-unit limit. Text-only posts are copied as plain messages,
 preserving their text and line breaks; source formatting entities are not reproduced.
 Long text is split into parts of at most 4,096 UTF-16 units without cutting Unicode

@@ -56,6 +56,7 @@ def bot():
         send_message=AsyncMock(return_value=SimpleNamespace(message_id=88)),
         edit_message_text=AsyncMock(),
         send_document=AsyncMock(),
+        send_video=AsyncMock(),
     )
 
 

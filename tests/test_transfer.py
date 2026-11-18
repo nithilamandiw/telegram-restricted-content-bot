@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from aiogram.exceptions import TelegramNetworkError, TelegramRetryAfter
-from aiogram.methods import SendDocument
+from aiogram.methods import SendDocument, SendVideo
 from telethon import errors, types
 
 from telegram_downloader.errors import user_error
@@ -50,6 +50,64 @@ async def test_photo_is_supported_without_document(settings, store, client, bot)
     assert store.list_for_user(101)[0].state == "done"
 
 
+@pytest.mark.parametrize(
+    ("mime_type", "name", "extension"),
+    [
+        ("video/mp4", None, ".mp4"),
+        ("video/mp4", "clip.bin", ".mp4"),
+        (None, "clip.MP4", ".mp4"),
+        ("application/octet-stream", "clip.mp4", ".bin"),
+    ],
+)
+async def test_mp4_is_sent_as_playable_video(
+    settings, store, client, bot, mime_type, name, extension
+):
+    message = client.get_messages.return_value
+    message.file = SimpleNamespace(
+        size=7,
+        name=name,
+        ext=extension,
+        mime_type=mime_type,
+        duration=18.75,
+        width=720,
+        height=1280,
+    )
+    message.document = SimpleNamespace(
+        attributes=[
+            types.DocumentAttributeVideo(duration=18.75, w=720, h=1280, supports_streaming=True)
+        ]
+    )
+
+    async def upload(**kwargs):
+        assert kwargs["chat_id"] == 101
+        assert kwargs["caption"] == message.message
+        assert kwargs["parse_mode"] is None
+        assert kwargs["duration"] == 18
+        assert kwargs["width"] == 720
+        assert kwargs["height"] == 1280
+        assert kwargs["supports_streaming"] is True
+        assert kwargs["request_timeout"] == settings.transfer_timeout_seconds
+        assert b"".join([chunk async for chunk in kwargs["video"].read(bot)]) == b"payload"
+
+    bot.send_video.side_effect = upload
+    service, job = make_service(settings, store, client, bot)
+    await service.execute(job)
+    bot.send_video.assert_awaited_once()
+    bot.send_document.assert_not_called()
+    assert store.get_job(job.id).state == "done"
+    assert not list(settings.downloads_dir.iterdir())
+
+
+@pytest.mark.parametrize("mime_type", ["video/x-matroska", "video/webm", "image/jpeg"])
+async def test_other_formats_keep_document_delivery(settings, store, client, bot, mime_type):
+    client.get_messages.return_value.file.mime_type = mime_type
+    service, job = make_service(settings, store, client, bot)
+    await service.execute(job)
+    bot.send_document.assert_awaited_once()
+    bot.send_video.assert_not_called()
+    assert store.get_job(job.id).state == "done"
+
+
 async def test_large_video_streams_in_bounded_chunks(settings, store, client, bot):
     from pathlib import Path
 
@@ -66,17 +124,21 @@ async def test_large_video_streams_in_bounded_chunks(settings, store, client, bo
         return file
 
     async def upload(**kwargs):
+        assert kwargs["duration"] is None
+        assert kwargs["supports_streaming"] is None
         seen = 0
-        async for chunk in kwargs["document"].read(bot):
+        async for chunk in kwargs["video"].read(bot):
             assert len(chunk) <= 256 * 1024
             seen += len(chunk)
         assert seen == size
 
     client.download_media.side_effect = download
-    bot.send_document.side_effect = upload
+    bot.send_video.side_effect = upload
     service, job = make_service(settings, store, client, bot)
     await service.execute(job)
     assert store.list_for_user(101)[0].state == "done"
+    bot.send_video.assert_awaited_once()
+    bot.send_document.assert_not_called()
     assert not list(settings.downloads_dir.iterdir())
 
 
@@ -287,6 +349,23 @@ async def test_network_failure_after_upload_is_not_automatically_retried(
     bot.send_document.assert_awaited_once()
     assert "result is unknown" in store.list_for_user(101)[0].error
     assert "secret" not in store.list_for_user(101)[0].error
+    assert not list(settings.downloads_dir.iterdir())
+
+
+async def test_video_network_failure_does_not_resend_or_fall_back(settings, store, client, bot):
+    client.get_messages.return_value.file.ext = ".mp4"
+    client.get_messages.return_value.file.name = "video.mp4"
+    bot.send_video.side_effect = TelegramNetworkError(
+        method=SendVideo(chat_id=101, video="file"), message="secret-token-url"
+    )
+    service, job = make_service(settings, store, client, bot)
+    await service.execute(job)
+    bot.send_video.assert_awaited_once()
+    bot.send_document.assert_not_called()
+    result = store.get_job(job.id)
+    assert result.state == "failed"
+    assert "result is unknown" in result.error
+    assert "secret" not in result.error
     assert not list(settings.downloads_dir.iterdir())
 
 
